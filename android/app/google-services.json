@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "311855283222",
+    "project_id": "nhcpl-payments",
+    "storage_bucket": "nhcpl-payments.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311855283222:android:6ddcdc5ab9afa56a9f4937",
+        "android_client_info": {
+          "package_name": "com.accountsmobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh4X2bwGp7VqbuHkW0EaaoqZkvJUZZYbo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

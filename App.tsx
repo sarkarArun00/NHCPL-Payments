@@ -1,45 +1,39 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import 'react-native-gesture-handler';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import React, {useEffect} from 'react';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+
+import AppNavigator from './src/navigation/AppNavigator';
+import { useAuthStore } from './src/store/authStore';
 import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function App() {
+  const restoreSession = useAuthStore(
+    state => state.restoreSession,
+  );
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        await restoreSession();
+      } catch (error) {
+        console.error(
+          'Unable to restore authentication session:',
+          error,
+        );
+      }
+    };
+
+    initializeApp();
+  }, [restoreSession]);
 
   return (
+  <GestureHandlerRootView style={{flex: 1}}>
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <AppNavigator />
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;
