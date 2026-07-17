@@ -176,7 +176,7 @@ const resetCenter = useCenterStore(
             </View>
 
             <Text style={styles.appName}>
-              Nirnayan Accounts
+              Nirnayan Payments
             </Text>
 
             <Text style={styles.appTagline}>

@@ -47,6 +47,8 @@ import { expenseApi } from '../../api/expense.api';
 import type {
   ExpenseComment,
 } from '../../types/expenseComment.types';
+import { useAppAlertStore } from '../../store/appAlertStore';
+
 
 // type TimelineItem = {
 //   id: string;
@@ -1318,6 +1320,24 @@ const generatedItems =
     });
   };
   
+  const showError =
+  useAppAlertStore(
+    state => state.showError,
+    );
+  
+  const showSuccess =
+  useAppAlertStore(
+    state => state.showSuccess,
+    );
+  
+  const showConfirm =
+  useAppAlertStore(
+    state => state.showConfirm,
+    );
+  
+  const showAlert = useAppAlertStore(
+  state => state.showAlert,
+);
 
   const updateLocalApprovalAfterApprove =
     () => {
@@ -1379,78 +1399,149 @@ const generatedItems =
     };
 
   const handleSendForApproval = () => {
-    if (!hasRequiredAttachment) {
-      const missingNames =
-        missingUploadedMandatoryAttachments
-          .map(
-            item =>
-              item.attachmentType,
-          )
-          .join(', ');
+  if (!hasRequiredAttachment) {
+    const missingNames =
+      missingUploadedMandatoryAttachments
+        .map(item => item.attachmentType)
+        .join(', ');
 
-      Alert.alert(
-        'Attachment required',
-        missingUploadedMandatoryAttachments
-          .length === 1
+    showAlert({
+      type: 'warning',
+      title: 'Attachment required',
+      message:
+        missingUploadedMandatoryAttachments.length === 1
           ? `${missingNames} is required.`
           : `The following attachments are required: ${missingNames}.`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Upload',
-            onPress: () => {
-              clearUploadMessages();
-
-              setIsAttachmentModalVisible(
-                true,
-              );
-            },
-          },
-        ],
-      );
-
-      return;
-    }
-
-    Alert.alert(
-      'Send for approval',
-      'Are you sure you want to send this voucher for approval?',
-      [
+      buttons: [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Send',
-          onPress: async () => {
-            const result =
-              await sendForApproval(
-                Number(expense.id),
-              );
-
-            if (result.success) {
-              updateLocalVoucherStatus(
-                'PENDING',
-              );
-
-              Alert.alert(
-                'Success',
-                result.message,
-              );
-            } else {
-              Alert.alert(
-                'Unable to continue',
-                result.message,
-              );
-            }
+          text: 'Upload',
+          style: 'default',
+          onPress: () => {
+            clearUploadMessages();
+            setIsAttachmentModalVisible(true);
           },
         },
       ],
-    );
-  };
+    });
+
+    return;
+  }
+
+  showConfirm(
+    'Send for approval',
+    'Are you sure you want to send this voucher for approval?',
+    async () => {
+      try {
+        const result = await sendForApproval(
+          Number(expense.id),
+        );
+
+        if (result.success) {
+          updateLocalVoucherStatus(
+            'PENDING',
+          );
+
+          showSuccess(
+            'Success!',
+            result.message,
+          );
+        } else {
+          showError(
+            'Unable to continue',
+            result.message,
+          );
+        }
+      } catch (error: any) {
+        showError(
+          'Unable to continue',
+          error?.message ||
+            'Something went wrong while sending the voucher for approval.',
+        );
+      }
+    },
+    {
+      confirmText: 'Send',
+      cancelText: 'Cancel',
+    },
+  );
+};
+  // const handleSendForApproval = () => {
+  //   if (!hasRequiredAttachment) {
+  //     const missingNames =
+  //       missingUploadedMandatoryAttachments
+  //         .map(
+  //           item =>
+  //             item.attachmentType,
+  //         )
+  //         .join(', ');
+
+  //     Alert.alert(
+  //       'Attachment required',
+  //       missingUploadedMandatoryAttachments
+  //         .length === 1
+  //         ? `${missingNames} is required.`
+  //         : `The following attachments are required: ${missingNames}.`,
+  //       [
+  //         {
+  //           text: 'Cancel',
+  //           style: 'cancel',
+  //         },
+  //         {
+  //           text: 'Upload',
+  //           onPress: () => {
+  //             clearUploadMessages();
+
+  //             setIsAttachmentModalVisible(
+  //               true,
+  //             );
+  //           },
+  //         },
+  //       ],
+  //     );
+
+  //     return;
+  //   }
+
+  //   Alert.alert(
+  //     'Send for approval',
+  //     'Are you sure you want to send this voucher for approval?',
+  //     [
+  //       {
+  //         text: 'Cancel',
+  //         style: 'cancel',
+  //       },
+  //       {
+  //         text: 'Send',
+  //         onPress: async () => {
+  //           const result =
+  //             await sendForApproval(
+  //               Number(expense.id),
+  //             );
+
+  //           if (result.success) {
+  //             updateLocalVoucherStatus(
+  //               'PENDING',
+  //             );
+
+  //             showSuccess(
+  //             'Success!',
+  //             result.message,
+  //           );
+  //           } else {
+  //             showError(
+  //               'Unable to continue',
+  //               result.message,
+  //             );
+  //           }
+  //         },
+  //       },
+  //     ],
+  //   );
+  // };
 
   const openAttachmentModal = () => {
     clearUploadMessages();
@@ -1525,11 +1616,11 @@ const generatedItems =
         return;
       }
 
-      Alert.alert(
-        'Unable to select file',
-        error?.message ||
-          'Something went wrong while selecting the attachment.',
-      );
+      showError(
+          'Unable to select file',
+          error?.message ||
+            'Something went wrong while selecting the attachment.',
+        );
     }
   };
 
@@ -1559,7 +1650,7 @@ const generatedItems =
         );
 
       if (!validation.valid) {
-        Alert.alert(
+        showError(
           'Attachment required',
           validation.message,
         );
@@ -1568,7 +1659,7 @@ const generatedItems =
       }
 
       if (!hasAnySelectedAttachment) {
-        Alert.alert(
+        showError(
           'Select attachment',
           'Please select at least one attachment.',
         );
@@ -1594,7 +1685,7 @@ const generatedItems =
         });
 
       if (!result.success) {
-        Alert.alert(
+        showError(
           'Upload failed',
           result.message,
         );
@@ -1672,93 +1763,52 @@ const generatedItems =
                 'PENDING',
               );
       handleRefresh();
-      Alert.alert(
+      showSuccess(
         'Upload successful',
         result.message,
-        [
-          {
-            text: 'OK',
-          },
-        ],
       );
     };
 
   const handleApprove = () => {
-    Alert.alert(
-      'Approve voucher',
-      'Are you sure you want to approve this voucher?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Approve',
+    showConfirm(
+  'Approve voucher',
+  'Please confirm that you want to approve this payment voucher.',
+  async () => {
+    const result =
+      await approveExpense({
+        approvalRequestId,
+        approverId: employeeId,
+        expenseCategoryId,
+        remarks: 'Approved',
+      });
 
-          onPress: async () => {
-            const result =
-              await approveExpense({
-                approvalRequestId,
+    if (!result.success) {
+      showError(
+        'Unable to approve',
+        result.message,
+      );
 
-                approverId:
-                  employeeId,
+      return;
+    }
 
-                expenseCategoryId,
-
-                remarks: 'Approved',
-              });
-
-            if (result.success) {
-              updateLocalApprovalAfterApprove();
-                updateLocalVoucherStatus(
-                  'APPROVED',
-                );
-
-                /*
-                * Refresh the Pending voucher list so
-                * the rejected voucher is removed.
-                */
-                if (
-                  employeeId > 0 &&
-                  centreId > 0 &&
-                  expenseCategoryId > 0
-                ) {
-                  await loadVouchers(
-                    {
-                      user_id: employeeId,
-                      center_id: centreId,
-                      category_id:
-                        expenseCategoryId,
-                      status: 'PENDING',
-                      payment_mode: 'BANK',
-                      page: 1,
-                      limit: 20,
-                    },
-                    true,
-                  );
-                }
-                Alert.alert(
-                'Voucher approved',
-                result.message,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      navigation.goBack();
-                    },
-                  },
-                ],
-              );
-            } else {
-              Alert.alert(
-                'Unable to approve',
-                result.message,
-              );
-            }
-          },
-        },
-      ],
+    updateLocalApprovalAfterApprove();
+    updateLocalVoucherStatus(
+      'APPROVED',
     );
+
+    showSuccess(
+      'Voucher approved',
+      result.message,
+      () => {
+        navigation.goBack();
+      },
+    );
+  },
+  {
+    confirmText: 'Approve',
+    cancelText: 'Cancel',
+  },
+);
   };
 
   const openRejectModal = async () => {
@@ -1784,11 +1834,10 @@ const generatedItems =
 
 const handleReject = async () => {
   if (!selectedRejectionReason) {
-    Alert.alert(
-      'Reason required',
-      'Please select a rejection reason.',
-    );
-
+    showError(
+        'Reason required',
+        'Please select a rejection reason.',
+      );
     return;
   }
 
@@ -1796,11 +1845,11 @@ const handleReject = async () => {
     isOtherReasonSelected &&
     !rejectionRemarks.trim()
   ) {
-    Alert.alert(
-      'Remarks required',
-      'Please enter a custom rejection reason.',
-    );
 
+    showError(
+        'Remarks required',
+        'Please enter a custom rejection reason.',
+      );
     return;
   }
 
@@ -1874,23 +1923,15 @@ const handleReject = async () => {
       );
     }
 
-    Alert.alert(
-      'Voucher rejected',
-      result.message,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            navigation.goBack();
-          },
-        },
-      ],
-    );
-  } else {
-      Alert.alert(
-        'Unable to reject',
+      showSuccess(
+        'Voucher rejected!',
         result.message,
       );
+  } else {
+    showError(
+    'Unable to reject',
+    result.message,
+  );
     }
   };
   
@@ -2023,11 +2064,6 @@ const handleReject = async () => {
             ? result
             : [];
 
-        console.log(
-          'NORMALIZED EXPENSE COMMENTS',
-          loadedComments,
-        );
-
         /*
         * Display the complete comment list.
         * Do not filter comments based on
@@ -2079,18 +2115,18 @@ const handleReject = async () => {
       findLatestReplyableQuery,
     ]);
 
-useEffect(() => {
-  if (!canUseMessaging) {
-    setComments([]);
-    setSelectedReplyComment(null);
-    return;
-  }
+  useEffect(() => {
+    if (!canUseMessaging) {
+      setComments([]);
+      setSelectedReplyComment(null);
+      return;
+    }
 
   void loadExpenseComments();
-}, [
-  canUseMessaging,
-  loadExpenseComments,
-]);
+  }, [
+    canUseMessaging,
+    loadExpenseComments,
+  ]);
   
   const handlePickMessageAttachments =
   async () => {
@@ -2198,259 +2234,161 @@ useEffect(() => {
   );
   };
   
-const removeMessageAttachment = (
-  indexToRemove: number,
-) => {
-  setMessageAttachments(
-    currentFiles =>
-      currentFiles.filter(
-        (_, index) =>
-          index !== indexToRemove,
-      ),
-  );
-};
+  const removeMessageAttachment = (
+    indexToRemove: number,
+  ) => {
+    setMessageAttachments(
+      currentFiles =>
+        currentFiles.filter(
+          (_, index) =>
+            index !== indexToRemove,
+        ),
+    );
+  };
   
-const handleSendMessage = async () => {
-const message =
-  commentText.trim();
+  const handleSendMessage = async () => {
+  const message =
+    commentText.trim();
 
-const hasMessage =
-  Boolean(message);
+  const hasMessage =
+    Boolean(message);
 
-const hasAttachments =
-  messageAttachments.length > 0;
+  const hasAttachments =
+    messageAttachments.length > 0;
 
-if (
-  !hasMessage &&
-  !hasAttachments
-) {
-  Alert.alert(
-    isEmployeeUser
-      ? 'Reply required'
-      : 'Query required',
-    isEmployeeUser
-      ? 'Please write a reply or attach a file.'
-      : 'Please write a query or attach a file.',
-  );
+    if (
+      !hasMessage &&
+      !hasAttachments
+    ) {
+      showError(
+        isEmployeeUser
+          ? 'Reply required'
+          : 'Query required',
+        isEmployeeUser
+          ? 'Please write a reply or attach a file.'
+          : 'Please write a query or attach a file.',
+      );
 
-  return;
-}
+      return;
+    }
 
-  if (!message) {
-    Alert.alert(
-      isEmployeeUser
-        ? 'Reply required'
-        : 'Query required',
-      isEmployeeUser
-        ? 'Please write a reply first.'
-        : 'Please write a query first.',
-    );
+    if (!message) {
+      showError(
+        isEmployeeUser
+          ? 'Reply required'
+          : 'Query required',
+        isEmployeeUser
+          ? 'Please write a reply first.'
+          : 'Please write a query first.',
+      );
 
-    return;
-  }
+      return;
+    }
 
-  if (currentUserId <= 0) {
-    Alert.alert(
-      'Unable to send',
-      'Logged-in user information is unavailable.',
-    );
+    if (currentUserId <= 0) {
+      showError(
+        'Unable to send',
+        'Logged-in user information is unavailable.',
+      );
+      return;
+    }
 
-    return;
-  }
+    try {
+      setIsSendingComment(true);
 
-  try {
-    setIsSendingComment(true);
+      let response: any;
 
-    let response: any;
+      /*
+      * Employee can only reply to an
+      * Admin/Director query.
+      */
+      if (isEmployeeUser) {
+        const replyTarget:
+          ExpenseComment | null =
+          selectedReplyComment ??
+          findLatestReplyableQuery(
+            comments,
+          );
 
-    /*
-     * Employee can only reply to an
-     * Admin/Director query.
-     */
-    if (isEmployeeUser) {
-      const replyTarget:
-        ExpenseComment | null =
-        selectedReplyComment ??
-        findLatestReplyableQuery(
-          comments,
-        );
+        if (!replyTarget) {
 
-      if (!replyTarget) {
-        Alert.alert(
+          showError(
           'Select query',
           'Please select an Admin or Director query before replying.',
         );
 
-        return;
-      }
+          return;
+        }
 
-      if (
-        !isAdminOrDirectorComment(
-          replyTarget,
-        )
-      ) {
-        Alert.alert(
+        if (
+          !isAdminOrDirectorComment(
+            replyTarget,
+          )
+        ) {
+          showError(
           'Invalid query',
           'Employee can reply only to an Admin or Director query.',
         );
+          return;
+        }
 
-        return;
-      }
+        const parentCommentId =
+          Number(replyTarget.id || 0);
 
-      const parentCommentId =
-        Number(replyTarget.id || 0);
+        const replyExpenseId =
+          Number(
+            replyTarget.expense_id ||
+              expense?.id ||
+              expenseId ||
+              0,
+          );
 
-      const replyExpenseId =
-        Number(
-          replyTarget.expense_id ||
-            expense?.id ||
-            expenseId ||
-            0,
-        );
-
-      if (parentCommentId <= 0) {
-        Alert.alert(
+        if (parentCommentId <= 0) {
+          showError(
           'Unable to reply',
           'The selected comment ID is unavailable.',
         );
 
-        return;
-      }
+          return;
+        }
 
-      if (replyExpenseId <= 0) {
-        Alert.alert(
+        if (replyExpenseId <= 0) {
+          showError(
           'Unable to reply',
           'The expense ID is unavailable.',
         );
 
-        return;
-      }
+          return;
+        }
 
-      const formData =
-        new FormData();
+        const formData =
+          new FormData();
 
-      formData.append(
-        'parent_id',
-        String(parentCommentId),
-      );
-
-      formData.append(
-        'expense_id',
-        String(replyExpenseId),
-      );
-
-      formData.append(
-        'user_id',
-        String(currentUserId),
-      );
-
-      formData.append(
-        'message',
-        message,
-      );
-
-      formData.append(
-        'isResolved',
-        'false',
-      );
-      messageAttachments.forEach(
-      file => {
         formData.append(
-          'files',
-          {
-            uri: file.uri,
-            name: file.name,
-            type: file.type,
-          } as any,
-        );
-      },
-    );
-
-      console.log(
-        'REPLY PAYLOAD',
-        (formData as any)._parts,
-      );
-
-      response =
-        await expenseApi
-          .replyExpenseComment(
-            formData,
-          );
-    } else {
-      /*
-       * Only Admin, Director and
-       * Super Admin can raise queries.
-       */
-      if (!canRaiseQuery) {
-        Alert.alert(
-          'Not allowed',
-          'You are not allowed to raise a query.',
+          'parent_id',
+          String(parentCommentId),
         );
 
-        return;
-      }
-
-      const queryExpenseId =
-        Number(
-          expense?.id ||
-            expenseId ||
-            0,
-        );
-
-      if (queryExpenseId <= 0) {
-        Alert.alert(
-          'Unable to send',
-          'The expense ID is unavailable.',
-        );
-
-        return;
-      }
-
-      const voucherId = Number(
-        expense?.payments?.[0]
-          ?.voucher?.id || 0,
-      );
-
-      const formData =
-        new FormData();
-
-      formData.append(
-        'expense_id',
-        String(queryExpenseId),
-      );
-
-      formData.append(
-        'voucher_id',
-        voucherId > 0
-          ? String(voucherId)
-          : '',
-      );
-
-      if (approvalRequestId > 0) {
         formData.append(
-          'approval_request_id',
-          String(
-            approvalRequestId,
-          ),
+          'expense_id',
+          String(replyExpenseId),
         );
-      }
 
-      formData.append(
-        'user_id',
-        String(currentUserId),
-      );
+        formData.append(
+          'user_id',
+          String(currentUserId),
+        );
 
-      formData.append(
-        'message',
-        message,
-      );
+        formData.append(
+          'message',
+          message,
+        );
 
-      formData.append(
-        'comment_type',
-        'COMMENT',
-      );
-
-      messageAttachments.forEach(
+        formData.append(
+          'isResolved',
+          'false',
+        );
+        messageAttachments.forEach(
         file => {
           formData.append(
             'files',
@@ -2463,170 +2401,258 @@ if (
         },
       );
 
-      console.log(
-        'QUERY PAYLOAD',
-        (formData as any)._parts,
-      );
+        response =
+          await expenseApi
+            .replyExpenseComment(
+              formData,
+            );
+      } else {
+        /*
+        * Only Admin, Director and
+        * Super Admin can raise queries.
+        */
+        if (!canRaiseQuery) {
+          showError(
+          'Not allowed',
+          'You are not allowed to raise a query.',
+        );
 
-      response =
-        await expenseApi
-          .sendExpenseComment(
-            formData,
+          return;
+        }
+
+        const queryExpenseId =
+          Number(
+            expense?.id ||
+              expenseId ||
+              0,
           );
-    }
 
-    const isSuccess =
-      Number(response?.status) ===
-        1 ||
-      response?.success === true;
+        if (queryExpenseId <= 0) {
+          showError(
+          'Unable to send',
+          'The expense ID is unavailable.',
+        );
 
-    if (!isSuccess) {
-      throw new Error(
+          return;
+        }
+
+        const voucherId = Number(
+          expense?.payments?.[0]
+            ?.voucher?.id || 0,
+        );
+
+        const formData =
+          new FormData();
+
+        formData.append(
+          'expense_id',
+          String(queryExpenseId),
+        );
+
+        formData.append(
+          'voucher_id',
+          voucherId > 0
+            ? String(voucherId)
+            : '',
+        );
+
+        if (approvalRequestId > 0) {
+          formData.append(
+            'approval_request_id',
+            String(
+              approvalRequestId,
+            ),
+          );
+        }
+
+        formData.append(
+          'user_id',
+          String(currentUserId),
+        );
+
+        formData.append(
+          'message',
+          message,
+        );
+
+        formData.append(
+          'comment_type',
+          'COMMENT',
+        );
+
+        messageAttachments.forEach(
+          file => {
+            formData.append(
+              'files',
+              {
+                uri: file.uri,
+                name: file.name,
+                type: file.type,
+              } as any,
+            );
+          },
+        );
+
+        response =
+          await expenseApi
+            .sendExpenseComment(
+              formData,
+            );
+      }
+
+      const isSuccess =
+        Number(response?.status) ===
+          1 ||
+        response?.success === true;
+
+      if (!isSuccess) {
+        throw new Error(
+          response?.message ||
+            (isEmployeeUser
+              ? 'Failed to send reply.'
+              : 'Failed to raise query.'),
+        );
+      }
+
+      setCommentText('');
+
+      await loadExpenseComments();
+      setMessageAttachments([]);
+
+
+      showSuccess(
+        isEmployeeUser
+          ? 'Reply sent'
+          : 'Query raised',
         response?.message ||
           (isEmployeeUser
-            ? 'Failed to send reply.'
-            : 'Failed to raise query.'),
+            ? 'Reply sent successfully.'
+            : 'Query raised successfully.'),
       );
-    }
+    } catch (error: any) {
+      console.error(
+        'Message sending failed:',
+        {
+          status:
+            error?.response?.status,
 
-    setCommentText('');
+          response:
+            error?.response?.data,
 
-    await loadExpenseComments();
-    setMessageAttachments([]);
+          message:
+            error?.message,
+        },
+      );
 
-
-    Alert.alert(
-      'Success',
-      response?.message ||
-        (isEmployeeUser
-          ? 'Reply sent successfully.'
-          : 'Query raised successfully.'),
-    );
-  } catch (error: any) {
-    console.error(
-      'Message sending failed:',
-      {
-        status:
-          error?.response?.status,
-
-        response:
-          error?.response?.data,
-
-        message:
-          error?.message,
-      },
-    );
-
-    Alert.alert(
+    showError(
       'Unable to send',
-      error?.response?.data
-        ?.message ||
+      error?.response?.data?.message ||
         error?.message ||
         (isEmployeeUser
           ? 'Failed to send reply.'
           : 'Failed to raise query.'),
     );
-  } finally {
-    setIsSendingComment(false);
-  }
-};
-  
-const handleOpenMessageAttachment =
-  async (attachment: any) => {
-    const attachmentPath = String(
-      attachment?.file_path ??
-        attachment?.filePath ??
-        attachment?.file_url ??
-        attachment?.fileUrl ??
-        attachment?.attachment_url ??
-        attachment?.attachmentUrl ??
-        attachment?.url ??
-        attachment?.path ??
-        '',
-    ).trim();
-
-    if (!attachmentPath) {
-      Alert.alert(
-        'Attachment unavailable',
-        'The attachment URL is unavailable.',
-      );
-
-      return;
-    }
-
-    const attachmentUrl =
-      buildAttachmentUrl(
-        attachmentPath,
-      );
-
-    if (!attachmentUrl) {
-      Alert.alert(
-        'Attachment unavailable',
-        'Unable to create the attachment URL.',
-      );
-
-      return;
-    }
-
-    try {
-      /*
-       * Encode spaces and special characters
-       * inside the filename.
-       */
-      const browserUrl =
-        encodeURI(attachmentUrl);
-
-      console.log(
-        'OPENING MESSAGE ATTACHMENT:',
-        browserUrl,
-      );
-
-      /*
-       * Do not use Linking.canOpenURL().
-       * Open the browser directly.
-       */
-      await Linking.openURL(
-        browserUrl,
-      );
-    } catch (error: any) {
-      console.error(
-        'Unable to open message attachment:',
-        {
-          attachment,
-          attachmentUrl,
-          message: error?.message,
-        },
-      );
-
-      Alert.alert(
-        'Unable to open attachment',
-        error?.message ||
-          'The attachment could not be opened.',
-      );
+    } finally {
+      setIsSendingComment(false);
     }
   };
+    
+  const handleOpenMessageAttachment =
+    async (attachment: any) => {
+      const attachmentPath = String(
+        attachment?.file_path ??
+          attachment?.filePath ??
+          attachment?.file_url ??
+          attachment?.fileUrl ??
+          attachment?.attachment_url ??
+          attachment?.attachmentUrl ??
+          attachment?.url ??
+          attachment?.path ??
+          '',
+      ).trim();
+
+      if (!attachmentPath) {
+        Alert.alert(
+          'Attachment unavailable',
+          'The attachment URL is unavailable.',
+        );
+
+        return;
+      }
+
+      const attachmentUrl =
+        buildAttachmentUrl(
+          attachmentPath,
+        );
+
+      if (!attachmentUrl) {
+        Alert.alert(
+          'Attachment unavailable',
+          'Unable to create the attachment URL.',
+        );
+
+        return;
+      }
+
+      try {
+        /*
+        * Encode spaces and special characters
+        * inside the filename.
+        */
+        const browserUrl =
+          encodeURI(attachmentUrl);
+
+        console.log(
+          'OPENING MESSAGE ATTACHMENT:',
+          browserUrl,
+        );
+
+        /*
+        * Do not use Linking.canOpenURL().
+        * Open the browser directly.
+        */
+        await Linking.openURL(
+          browserUrl,
+        );
+      } catch (error: any) {
+        console.error(
+          'Unable to open message attachment:',
+          {
+            attachment,
+            attachmentUrl,
+            message: error?.message,
+          },
+        );
+
+        Alert.alert(
+          'Unable to open attachment',
+          error?.message ||
+            'The attachment could not be opened.',
+        );
+      }
+    };
   
-if (!selectedVoucher) {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.emptyContainer}>
-        <MaterialDesignIcons
-          name="file-alert-outline"
-          size={48}
-          color={Colors.textMuted}
-        />
+  if (!selectedVoucher) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.emptyContainer}>
+          <MaterialDesignIcons
+            name="file-alert-outline"
+            size={48}
+            color={Colors.textMuted}
+          />
 
-        <Text style={styles.emptyTitle}>
-          Voucher not available
-        </Text>
+          <Text style={styles.emptyTitle}>
+            Voucher not available
+          </Text>
 
-        <Text style={styles.emptyText}>
-          Please return to the voucher list and select a voucher again.
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
-}
+          <Text style={styles.emptyText}>
+            Please return to the voucher list and select a voucher again.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const openMessageModal = async () => {
   if (!canUseMessaging) {

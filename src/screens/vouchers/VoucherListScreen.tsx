@@ -55,6 +55,7 @@ import {
   ExpenseCategoryCount,
 } from '../../api/expense.api';
 import { approvalApi } from '../../api/approval.api';
+import VoucherTypeModal from '../../components/VoucherTypeModal';
 
 
 
@@ -384,6 +385,13 @@ const [
   () => new Set<number>(),
 );
   
+  
+  const [
+  voucherTypeModalVisible,
+  setVoucherTypeModalVisible,
+  ] = useState(false);
+  
+
   const statusFilters = useMemo(() => {
     if (isAdminOrDirector) {
       return allStatusFilters.filter(
@@ -2123,13 +2131,9 @@ useEffect(() => {
             pressed &&
               styles.buttonPressed,
           ]}
-          onPress={() => {
-            navigation.dispatch(
-              CommonActions.navigate({
-                name: 'CreateVoucher',
-              }),
-            );
-          }}>
+          onPress={() =>
+            setVoucherTypeModalVisible(true)
+          }>
           <MaterialDesignIcons
             name="plus"
             size={25}
@@ -3083,7 +3087,32 @@ eligibleVoucherIds.length > 0 && selectedVoucherIds.size > 0 ? (
       </View>
     </View>
   </View>
-</Modal>
+      </Modal>
+      
+      <VoucherTypeModal
+  visible={voucherTypeModalVisible}
+  onClose={() =>
+    setVoucherTypeModalVisible(false)
+  }
+  onSinglePress={() => {
+    setVoucherTypeModalVisible(false);
+
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'SingleVoucher',
+      }),
+    );
+  }}
+  onBulkPress={() => {
+    setVoucherTypeModalVisible(false);
+
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'CreateVoucher',
+      }),
+    );
+  }}
+/>
     </SafeAreaView>
   );
 }

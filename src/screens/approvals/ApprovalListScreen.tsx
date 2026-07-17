@@ -37,6 +37,7 @@ import {
 } from '../../api/expense.api';
 import { useAuthStore } from "../../store/authStore";
 import { useCenterStore } from "../../store/centerStore";
+import {useAppAlertStore} from '../../store/appAlertStore';
 
 
 type ChecklistStatus =
@@ -336,11 +337,6 @@ const loadChecklist = useCallback(
           selectedFilter.toDate;
       }
 
-      console.log(
-        'PAYMENT CHECKLIST PAYLOAD:',
-        payload,
-      );
-
       const response =
         await expenseApi.paymentChecklist(
           payload,
@@ -431,6 +427,18 @@ const loadChecklist = useCallback(
   ],
 );
 
+  const showConfirm = useAppAlertStore(
+  state => state.showConfirm,
+);
+
+const showSuccess = useAppAlertStore(
+  state => state.showSuccess,
+);
+
+const showError = useAppAlertStore(
+  state => state.showError,
+);
+  
   useFocusEffect(
     useCallback(() => {
       void loadChecklist(true);
@@ -633,36 +641,54 @@ const loadExpenseCategories =
   );
 
   const applyFilter = useCallback(async () => {
-    if (Boolean(draftFilter.fromDate) !== Boolean(draftFilter.toDate)) {
-      Alert.alert(
-        "Incomplete date range",
-        "Select both From Date and To Date, or clear both dates.",
-      );
-      return;
-    }
+  const hasFromDate = Boolean(
+    draftFilter.fromDate,
+  );
 
-    if (
-      draftFilter.fromDate &&
-      draftFilter.toDate &&
-      draftFilter.fromDate > draftFilter.toDate
-    ) {
-      Alert.alert(
-        "Invalid date range",
-        "To Date cannot be earlier than From Date.",
-      );
-      return;
-    }
+  const hasToDate = Boolean(
+    draftFilter.toDate,
+  );
 
-    const nextFilter = {
-      ...draftFilter,
-    };
+  if (hasFromDate !== hasToDate) {
+    showError(
+      'Incomplete date range',
+      'Select both From Date and To Date, or clear both dates.',
+    );
 
-    setActiveFilter(nextFilter);
-    setIsFilterVisible(false);
-    setActiveDateField(null);
+    return;
+  }
 
-    await loadChecklist(true, nextFilter);
-  }, [draftFilter, loadChecklist]);
+  if (
+    draftFilter.fromDate &&
+    draftFilter.toDate &&
+    draftFilter.fromDate >
+      draftFilter.toDate
+  ) {
+    showError(
+      'Invalid date range',
+      'To Date cannot be earlier than From Date.',
+    );
+
+    return;
+  }
+
+  const nextFilter = {
+    ...draftFilter,
+  };
+
+  setActiveFilter(nextFilter);
+  setIsFilterVisible(false);
+  setActiveDateField(null);
+
+  await loadChecklist(
+    true,
+    nextFilter,
+  );
+}, [
+  draftFilter,
+  loadChecklist,
+  showError,
+]);
 
   const resetFilter = useCallback(async () => {
     setDraftFilter(DEFAULT_FILTER);
@@ -673,69 +699,164 @@ const loadExpenseCategories =
     await loadChecklist(true, DEFAULT_FILTER);
   }, [loadChecklist]);
 
+  // const handlePayNow = useCallback(
+  //   (item: PaymentChecklistItem) => {
+  //     const checklistId = Number(item.checklist_id ?? 0);
+
+  //     if (checklistId <= 0) {
+  //       Alert.alert("Payment unavailable", "Checklist ID is unavailable.");
+  //       return;
+  //     }
+
+  //     Alert.alert(
+  //       "Confirm payment",
+  //       `Proceed with payment for ${item.voucher_no || "this voucher"}?`,
+  //       [
+  //         {
+  //           text: "Cancel",
+  //           style: "cancel",
+  //         },
+  //         {
+  //           text: "Pay Now",
+  //           onPress: async () => {
+  //             try {
+  //               setPayNowLoadingId(checklistId);
+
+  //               const response = await expenseApi.payNowExpense(checklistId);
+
+  //               const isSuccess =
+  //                 Number(response?.status) === 1 || response?.success === true;
+
+  //               if (!isSuccess) {
+  //                 throw new Error(
+  //                   response?.message || "Unable to process payment.",
+  //                 );
+  //               }
+
+  //               await loadChecklist(true);
+
+  //               Alert.alert(
+  //                 "Payment updated",
+  //                 response?.message || "Payment status changed successfully.",
+  //               );
+  //             } catch (apiError: any) {
+  //               console.error("Pay now failed:", {
+  //                 status: apiError?.response?.status,
+  //                 response: apiError?.response?.data,
+  //                 message: apiError?.message,
+  //               });
+
+  //               Alert.alert(
+  //                 "Payment failed",
+  //                 apiError?.response?.data?.message ||
+  //                   apiError?.message ||
+  //                   "Something went wrong while processing the payment.",
+  //               );
+  //             } finally {
+  //               setPayNowLoadingId(null);
+  //             }
+  //           },
+  //         },
+  //       ],
+  //     );
+  //   },
+  //   [loadChecklist],
+  // );
+
   const handlePayNow = useCallback(
-    (item: PaymentChecklistItem) => {
-      const checklistId = Number(item.checklist_id ?? 0);
+  (item: PaymentChecklistItem) => {
+    const checklistId = Number(
+      item.checklist_id ?? 0,
+    );
 
-      if (checklistId <= 0) {
-        Alert.alert("Payment unavailable", "Checklist ID is unavailable.");
-        return;
-      }
-
-      Alert.alert(
-        "Confirm payment",
-        `Proceed with payment for ${item.voucher_no || "this voucher"}?`,
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Pay Now",
-            onPress: async () => {
-              try {
-                setPayNowLoadingId(checklistId);
-
-                const response = await expenseApi.payNowExpense(checklistId);
-
-                const isSuccess =
-                  Number(response?.status) === 1 || response?.success === true;
-
-                if (!isSuccess) {
-                  throw new Error(
-                    response?.message || "Unable to process payment.",
-                  );
-                }
-
-                await loadChecklist(true);
-
-                Alert.alert(
-                  "Payment updated",
-                  response?.message || "Payment status changed successfully.",
-                );
-              } catch (apiError: any) {
-                console.error("Pay now failed:", {
-                  status: apiError?.response?.status,
-                  response: apiError?.response?.data,
-                  message: apiError?.message,
-                });
-
-                Alert.alert(
-                  "Payment failed",
-                  apiError?.response?.data?.message ||
-                    apiError?.message ||
-                    "Something went wrong while processing the payment.",
-                );
-              } finally {
-                setPayNowLoadingId(null);
-              }
-            },
-          },
-        ],
+    if (checklistId <= 0) {
+      showError(
+        'Payment unavailable',
+        'Checklist ID is unavailable.',
       );
-    },
-    [loadChecklist],
-  );
+
+      return;
+    }
+
+    showConfirm(
+      'Confirm payment',
+      `Proceed with payment for ${
+        item.voucher_no ||
+        'this voucher'
+      }?`,
+      async () => {
+        try {
+          setPayNowLoadingId(
+            checklistId,
+          );
+
+          const response =
+            await expenseApi
+              .payNowExpense(
+                checklistId,
+              );
+
+          const isSuccess =
+            Number(
+              response?.status,
+            ) === 1 ||
+            response?.success === true;
+
+          if (!isSuccess) {
+            throw new Error(
+              response?.message ||
+                'Unable to process payment.',
+            );
+          }
+
+          await loadChecklist(true);
+
+          showSuccess(
+            'Payment updated',
+            response?.message ||
+              'Payment status changed successfully.',
+          );
+        } catch (apiError: any) {
+          console.error(
+            'Pay now failed:',
+            {
+              status:
+                apiError?.response
+                  ?.status,
+
+              response:
+                apiError?.response
+                  ?.data,
+
+              message:
+                apiError?.message,
+            },
+          );
+
+          showError(
+            'Payment failed',
+            apiError?.response?.data
+              ?.message ||
+              apiError?.message ||
+              'Something went wrong while processing the payment.',
+          );
+        } finally {
+          setPayNowLoadingId(null);
+        }
+      },
+      {
+        confirmText: 'Pay Now',
+        cancelText: 'Cancel',
+      },
+    );
+  },
+  [
+    loadChecklist,
+    showConfirm,
+    showSuccess,
+    showError,
+  ],
+);
 
   const renderChecklistItem = ({ item }: { item: PaymentChecklistItem }) => {
     const statusConfig = getStatusConfig(item.status);

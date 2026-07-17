@@ -27,6 +27,7 @@ import {Colors} from '../constants/colors';
 import { useAuthStore } from '../store/authStore';
 import VoucherDetailsScreen from '../screens/vouchers/VoucherDetailsScreen';
 import NotificationScreen from '../screens/notifications/NotificationScreen';
+import AppAlertModal from '../components/AppAlertModal';
 
 // import {
 //   getAndroidFcmToken,
@@ -40,6 +41,7 @@ import {
   subscribeToFcmTokenRefresh,
   subscribeToForegroundMessages,
 } from '../services/pushNotification.service';
+import SingleVoucherScreen from '../screens/vouchers/SingleVoucherScreen';
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -128,8 +130,6 @@ return (
       <Stack.Navigator>
         {isAuthenticated ? (
           <>
-            
-            
             <Stack.Screen
               name="MainTabs"
               component={BottomTabNavigator}
@@ -144,9 +144,11 @@ return (
               options={{
                 title: 'Create Payment Voucher',
                 headerShadowVisible: false,
-                headerTintColor: Colors.textPrimary,
+                headerTintColor:
+                  Colors.textPrimary,
                 headerStyle: {
-                  backgroundColor: Colors.surface,
+                  backgroundColor:
+                    Colors.surface,
                 },
               }}
             />
@@ -157,52 +159,71 @@ return (
               options={{
                 title: 'Voucher Details',
                 headerShadowVisible: false,
-                headerTintColor: Colors.textPrimary,
+                headerTintColor:
+                  Colors.textPrimary,
                 headerStyle: {
-                  backgroundColor: Colors.surface,
+                  backgroundColor:
+                    Colors.surface,
                 },
               }}
             />
-            
+
             <Stack.Screen
-            name="Notification"
-            component={NotificationScreen}
+              name="Notification"
+              component={NotificationScreen}
+              options={{
+                title: 'Notifications',
+                headerShadowVisible: false,
+                headerTintColor:
+                  Colors.textPrimary,
+                headerStyle: {
+                  backgroundColor:
+                    Colors.surface,
+                },
+              }}
+            />
+
+            <Stack.Screen
+            name="SingleVoucher"
+            component={SingleVoucherScreen}
             options={{
-              title: 'Notifications',
+              title: 'Create Single Voucher',
               headerShadowVisible: false,
-              headerTintColor:
-                Colors.textPrimary,
+              headerTintColor: Colors.textPrimary,
               headerStyle: {
-                backgroundColor:
-                  Colors.surface,
+                backgroundColor: Colors.surface,
               },
             }}
           />
+            
           </>
-          ) : (
-            <>
-              <Stack.Screen
-                name="Login"
-                component={LoginScreen}
-                options={{
-                  headerShown: false,
-                  animationTypeForReplace: 'pop',
-                }}
-              />
+        ) : (
+          <>
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{
+                headerShown: false,
+                animationTypeForReplace:
+                  'pop',
+              }}
+            />
 
-              <Stack.Screen
-                name="ForgotPassword"
-                component={ForgotPasswordScreen}
-                options={{
-                  headerShown: false,
-                }}
-              />
-            </>
-          )}
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+              options={{
+                headerShown: false,
+              }}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
-      </SafeAreaProvider>
-  );
+
+    <AppAlertModal />
+  </SafeAreaProvider>
+);
 }
 
 const styles = StyleSheet.create({

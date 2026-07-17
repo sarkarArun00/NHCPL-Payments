@@ -13,12 +13,17 @@ export type RootStackParamList = {
     Login: undefined;
 
     MainTabs:
-    NavigatorScreenParams<
-        MainTabParamList
-    >;
+    NavigatorScreenParams<MainTabParamList>;
 
     Notification: undefined;
     ForgotPassword: undefined;
+
+    CreateVoucher: undefined;
+    SingleVoucher: undefined;
+
+    VoucherDetails: {
+        voucherId?: number;
+    } | undefined;
 };
 
 export type BottomTabParamList = {

@@ -56,6 +56,7 @@ import { ExpenseVoucher } from '../../types/voucher.types';
 import type {
   ExpenseStatus,
 } from '../../types/voucher.types';
+import VoucherTypeModal from '../../components/VoucherTypeModal';
 
 
 
@@ -405,6 +406,10 @@ export default function DashboardScreen() {
   setIsCustomDateFilterApplied,
   ] = useState(false);
   
+  const [
+  voucherTypeModalVisible,
+  setVoucherTypeModalVisible,
+] = useState(false);
   
   const dashboardEmployee =
   session?.employee as any;
@@ -564,20 +569,20 @@ const [
    * Load center list only when login center
    * becomes available.
    */
-useEffect(() => {
-  if (employeeId <= 0) {
-    return;
-  }
+  useEffect(() => {
+    if (employeeId <= 0) {
+      return;
+    }
 
-  void loadCenters(
+    void loadCenters(
+      employeeId,
+      loginCenterId,
+    );
+  }, [
     employeeId,
     loginCenterId,
-  );
-}, [
-  employeeId,
-  loginCenterId,
-  loadCenters,
-]);
+    loadCenters,
+  ]);
 
     useFocusEffect(
     useCallback(() => {
@@ -614,6 +619,38 @@ useEffect(() => {
   ).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+  };
+  
+  const formatDashboardCaptionDate = (
+  value: Date | string | null | undefined,
+): string => {
+  if (!value) {
+    return '';
+  }
+
+  const parsedDate =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  const day = String(
+    parsedDate.getDate(),
+  ).padStart(2, '0');
+
+  const month = parsedDate.toLocaleString(
+    'en-US',
+    {
+      month: 'long',
+    },
+  );
+
+  const year = parsedDate.getFullYear();
+
+  return `${day}-${month}-${year}`;
 };
   /*
    * Load dashboard according to active center.
@@ -710,13 +747,13 @@ useEffect(() => {
     );
   };
 
-const closeDashboardFilter =
-  () => {
-    setVisibleDatePicker(null);
-    setIsDashboardFilterVisible(
-      false,
-    );
-  };
+  const closeDashboardFilter =
+    () => {
+      setVisibleDatePicker(null);
+      setIsDashboardFilterVisible(
+        false,
+      );
+    };
 
   const handleDashboardDateChange = (
   event: DateTimePickerEvent,
@@ -1007,13 +1044,29 @@ const areDraftDatesOptional =
   
   
 
-  const openCreateVoucher = () => {
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'CreateVoucher',
-      }),
-    );
-  };
+const openCreateVoucher = () => {
+  setVoucherTypeModalVisible(true);
+};
+
+const openSingleVoucher = () => {
+  setVoucherTypeModalVisible(false);
+
+  navigation.dispatch(
+    CommonActions.navigate({
+      name: 'SingleVoucher',
+    }),
+  );
+};
+
+const openBulkVoucher = () => {
+  setVoucherTypeModalVisible(false);
+
+  navigation.dispatch(
+    CommonActions.navigate({
+      name: 'CreateVoucher',
+    }),
+  );
+};
 
   const openVoucherDetails = (
     voucher: any,
@@ -1066,17 +1119,6 @@ const selectedVoucherData =
   };
 
 
-const totalPayments = Number(
-  summary?.totals
-    ?.total_settled_amount ?? 0,
-);
-
-const paymentPercentageChange =
-  Number(
-    summary?.totals
-      ?.percentage_change ?? 0,
-  );
-
 const pendingApprovalCount =
   Number(
     summary?.counts?.pending ?? 0,
@@ -1127,16 +1169,8 @@ const currentCentreName = selectedCenter
   : selectedCenterId
     ? `Center ${selectedCenterId}`
     : 'Select center';
-  
-  
-  console.log('DASHBOARD ROLE:', {
-  dashboardRole,
-  employee: dashboardEmployee,
-  isAdminSummaryUser,
-  isEmployeeSummaryUser,
-});
 
-  
+
 
   return (
     <SafeAreaView
@@ -1175,24 +1209,24 @@ const currentCentreName = selectedCenter
               color={Colors.primary}
             />
 
-          <View
+          {/* <View
             style={
               styles.summaryHeaderRow
             }>
-          <View style={styles.summaryHeaderRow}>
-            <View style={styles.summaryHeaderContent}>
-              <Text style={styles.sectionTitle}>
-                Payment summary
-              </Text>
+            <View style={styles.summaryHeaderRow}>
+              <View style={styles.summaryHeaderContent}>
+                <Text style={styles.sectionTitle}>
+                  Payment summary
+                </Text>
 
-            <Text style={styles.summaryFilterCaption}>
+            <Text style={styles.paymentSummaryFilterText}>
               {dashboardFilter.status}
 
               {dashboardFilter.fromDate &&
               dashboardFilter.toDate
-                ? ` • ${formatDate(
+                ? ` • ${formatDashboardCaptionDate(
                     dashboardFilter.fromDate,
-                  )} to ${formatDate(
+                  )} to ${formatDashboardCaptionDate(
                     dashboardFilter.toDate,
                   )}`
                 : ''}
@@ -1212,9 +1246,9 @@ const currentCentreName = selectedCenter
                 color={Colors.primary}
               />
             </Pressable>
-          </View>
+          </View> */}
 
-            <Pressable
+            {/* <Pressable
               onPress={
                 openDashboardFilter
               }
@@ -1229,7 +1263,7 @@ const currentCentreName = selectedCenter
                 color={Colors.primary}
               />
             </Pressable>
-          </View>
+          </View> */}
           </View>
         ) : null}
 
@@ -1390,7 +1424,19 @@ const currentCentreName = selectedCenter
               Payment summary
             </Text>
 
-            <Text style={styles.paymentSummaryFilterText}>
+              <Text style={styles.paymentSummaryFilterText}>
+              {dashboardFilter.status}
+
+              {dashboardFilter.fromDate &&
+              dashboardFilter.toDate
+                ? ` • ${formatDashboardCaptionDate(
+                    dashboardFilter.fromDate,
+                  )} to ${formatDashboardCaptionDate(
+                    dashboardFilter.toDate,
+                  )}`
+                : ''}
+            </Text>
+            {/* <Text style={styles.paymentSummaryFilterText}>
               {dashboardFilter.status}
 
               {dashboardFilter.fromDate &&
@@ -1401,7 +1447,7 @@ const currentCentreName = selectedCenter
                     dashboardFilter.toDate,
                   )}`
                 : ''}
-            </Text>
+            </Text> */}
           </View>
 
           <Pressable
@@ -1567,13 +1613,9 @@ const currentCentreName = selectedCenter
                 Create payment voucher
               </Text>
 
-              <Text
-                style={
-                  styles.createVoucherDescription
-                }>
-                Upload and process an XLS
-                or XLSX file
-              </Text>
+            <Text style={styles.createVoucherDescription}>
+              Create a single voucher or upload vouchers in bulk
+            </Text>
             </View>
 
             <MaterialDesignIcons
@@ -2389,6 +2431,15 @@ const currentCentreName = selectedCenter
       />
     ) : null}
       </Modal>
+
+      <VoucherTypeModal
+      visible={voucherTypeModalVisible}
+      onClose={() =>
+        setVoucherTypeModalVisible(false)
+      }
+      onSinglePress={openSingleVoucher}
+      onBulkPress={openBulkVoucher}
+    />
   </SafeAreaView>
         );
 }
